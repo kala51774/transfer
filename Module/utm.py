@@ -17,17 +17,17 @@ class utm(nn.Module):
     def forward(self, content, style=None,noise=None,init=False):
 
         if init:
-            print("content.shape:", content.shape)
+            # print("content.shape:", content.shape)
 
             cF_nor = nor_mean_std(content)
             cF = self.net(cF_nor)
             cF = self.uncompress(cF)
             cF = cF +content
-            print("cf.shape:", cF.shape)
+            # print("cf.shape:", cF.shape)
             return cF
 
         else:
-            print("content.shape:", content.shape,"style.shape:",style.shape)
+            # print("content.shape:", content.shape,"style.shape:",style.shape)
 
             cF_nor = nor_mean_std(content)
             sF_nor, smean = nor_mean(style)
@@ -43,7 +43,7 @@ class utm(nn.Module):
                 gF = gF + smean.expand(cF_nor.size())+content
             else:
                 gF = gF + smean.expand(cF_nor.size())+content
-            print("gF.shape",gF.shape)
+            # print("gF.shape",gF.shape)
             return gF
 
 def count_parameters(model):
