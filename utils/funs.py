@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 import os
 from torch.autograd import Variable
-from torch.utils._contextlib import F
+import torch.nn.functional as F
 
 import  time as t
 # 参数权重初始化

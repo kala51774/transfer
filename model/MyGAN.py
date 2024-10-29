@@ -11,7 +11,6 @@ from torch.nn.functional import interpolate
 
 from Discriminator.Discriminator_S import Discriminator_S
 from Encoder.StyleEncoder import StyleEncoder
-from Module.utm import utm
 from model.Discriminator_T import Discriminator_T
 from model.Generator import Generator
 from model.VGG19 import VGG19
@@ -65,7 +64,9 @@ class MyGAN(object):
         self.D = Discriminator_S().to(self.device)
         self.D_patch = Discriminator_T().to(self.device)
         self.style_net = StyleEncoder().to(self.device)
-        self.sct = utm().to(self.device)
+        # self.sct = utm().to(self.device)
+        self.sct = args.neck().to(self.device)
+
         self.vgg19 = VGG19().to(self.device)
         self.vgg19.eval()
         self.p = content_struct().to(self.device)
@@ -200,7 +201,6 @@ class MyGAN(object):
         data_loader = self.load_data()
         count = len(data_loader)
 
-        #             self.classifier_optim.param_groups[0]['lr']-=self.lr/(self.iter//2)
         start_t = t.time()
         self.G.train()
         if self.train_init:

@@ -56,11 +56,15 @@ def check_args(args):
     check_folder(os.path.join(args.result_dir, args.dataset, 'sty'))
     check_folder(os.path.join(args.result_dir, args.dataset, 'atten'))
     return args
+from Module.utm import utm
+
 def main():
+
    args=parse_args()
    args.isTrain=True
-   args.train_init=True
+   args.train_init=False
    args.retrain=False
+   args.neck = utm
    args.dataset="hayao"
    gan=MyGAN(args)
    if args.isTrain:

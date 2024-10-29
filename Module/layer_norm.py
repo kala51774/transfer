@@ -1,5 +1,5 @@
 from torch import nn
-from torch.utils._contextlib import F
+import torch.nn.functional as F
 
 
 class layer_norm(nn.Module):
