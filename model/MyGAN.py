@@ -17,11 +17,15 @@ from model.VGG19 import VGG19
 from utils.ImagePools import ImagePools
 from utils.content_struct import content_struct
 from  utils.funs import *
-
+from torch.utils.tensorboard import SummaryWriter
 class MyGAN(object):
     def __init__(self, args):
         super().__init__()
         # 定义配置
+        self.logdir = './runs'.join(self.dataset) if args.logdir==None else args.logdir
+        self.iter=0 if args.iter==None else args.iter
+
+        self.writer = SummaryWriter(log_dir=args.logdir)
         self.device = args.device
         self.result_dir = args.result_dir
         self.checkpoint_dir = args.checkpoint_dir
@@ -207,6 +211,7 @@ class MyGAN(object):
             print("=============================pre train phase==============================")
             for epoch in tqdm(range(self.pre_epoch)):
                 for i, (x, y) in enumerate(data_loader):
+                    self.iter+=1
                     x, y = x.to(self.device), y.to(self.device)
                     # 预训练阶段
                     requires_grad(self.D, False)
@@ -234,10 +239,19 @@ class MyGAN(object):
                     con_loss_3 = self.content_loss(fake_con3, real_con3.detach())
                     con_loss = (con_loss_1 + con_loss_2 + con_loss_3) / 3 * self.weight_content
 
+                    self.writer.add_scalar('con_loss1', con_loss_1, self.iter)
+                    self.writer.add_scalar('con_loss2', con_loss_2, self.iter)
+                    self.writer.add_scalar('con_loss3', con_loss_3, self.iter)
+                    self.writer.add_scalar('con_loss', con_loss, self.iter)
+                    self.iter += 1
+
                     con_loss.backward()
                     self.optim_G.step()
                     self.optim_sct.step()
                     end_epoch_t = t.time()
+
+
+
                     print(
                         f"epoch:[{epoch + 1}/{self.pre_epoch}],iter:[{i + 1}/{count}],loss_G:{con_loss},G_lr:{self.optim_G.param_groups[0]['lr']},"
                         f"time:{time_change(end_epoch_t - start_t)}")
@@ -246,6 +260,7 @@ class MyGAN(object):
         else:
             print('==========================start train=====================================')
             for epoch in tqdm(range(self.epoch)):
+
                 # 学习率衰退
                 if epoch > 99:
                     self.optim_G.param_groups[0]['lr'] -= 0.0002 / 50
@@ -312,8 +327,9 @@ class MyGAN(object):
 
                     g_testure_loss = self.generator_gram_loss(fake_patch_logit) * self.weight_testure
                     # multi-level content loss
-                    real_con = self.vgg19(x)
-                    fake_con1 = self.vgg19(fake1_img)
+                    with torch.no_grad():
+                        real_con = self.vgg19(x)
+                        fake_con1 = self.vgg19(fake1_img)
                     con_loss_1 = self.content_loss(fake_con1, real_con.detach())
                     # 128
                     real_con2 = interpolate(x, scale_factor=0.5, mode='bilinear')
@@ -345,6 +361,17 @@ class MyGAN(object):
                     self.op_style_net.step()
                     self.optim_sct.step()
                     end_epoch_t = t.time()
+                    self.writer.add_scalar('tv_loss1', tv_loss, self.iter)
+                    self.writer.add_scalar('g_surface_loss', g_surface_loss, self.iter)
+                    self.writer.add_scalar('g_testure_loss', g_testure_loss, self.iter)
+                    self.writer.add_scalar('col_loss', col_loss, self.iter)
+                    self.writer.add_scalar('con_loss1', con_loss_1, self.iter)
+                    self.writer.add_scalar('con_loss2', con_loss_2, self.iter)
+                    self.writer.add_scalar('con_loss3', con_loss_3, self.iter)
+                    self.writer.add_scalar('con_loss', con_loss, self.iter)
+                    self.iter += 1
+
+
                     print(
                         f"epoch:[{epoch + 1}/{self.epoch}],iter:[{i + 1}/{count}],loss_G:{g_loss},loss_d:{d_loss},G_lr:{self.optim_G.param_groups[0]['lr']},D_lr:{self.optim_D.param_groups[0]['lr']},time:{time_change(end_epoch_t - start_t)}")
                 if (epoch + 1) % self.save_pred == 0:

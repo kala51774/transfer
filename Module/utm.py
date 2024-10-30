@@ -14,6 +14,7 @@ class utm(nn.Module):
                 nn.Conv2d(128,32,1,1,0))
         self.uncompress = nn.Conv2d(32,256,1,1,0)
         self.sm = nn.Softmax(dim=-1)
+
     def forward(self, content, style=None,noise=None,init=False):
 
         if init:
@@ -54,4 +55,4 @@ if __name__ == '__main__':
     # print(x.shape)
     model= utm()
     # print(model(x,x).shape)
-    # print(count_parameters(model))
+    print(count_parameters(model))
