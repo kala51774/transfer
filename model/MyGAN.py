@@ -223,8 +223,9 @@ class MyGAN(object):
                     con_code = self.G.encoder(x)
                     con_code = self.sct(con_code, init=True)
                     fake1_img = self.G.decoders(con_code)
-                    real_con = self.vgg19(x)
-                    fake_con1 = self.vgg19(fake1_img)
+                    with torch.no_grad():
+                        real_con = self.vgg19(x)
+                        fake_con1 = self.vgg19(fake1_img)
                     con_loss_1 = self.content_loss(fake_con1, real_con.detach())
                     # 128
                     real_con2 = interpolate(x, scale_factor=0.5, mode='bilinear')
