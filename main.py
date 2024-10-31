@@ -52,6 +52,9 @@ def parse_args():
     parser.add_argument('--weight_style', type=float, default=2)
     parser.add_argument('--weight_edge', type=float, default=0.001)
     parser.add_argument('--weight_decay', type=float, default=0.0001)
+    parser.add_argument('--iter', type=int, default=0)
+    parser.add_argument('--logdir', type=str, default='./runs')
+
     return check_args(parser.parse_args(args=[]))
 def check_args(args):
     check_folder(os.path.join(args.result_dir, args.dataset, 'checkpoint'))

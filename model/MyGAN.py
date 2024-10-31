@@ -23,7 +23,7 @@ class MyGAN(object):
         super().__init__()
         # 定义配置
         self.logdir = './runs'.join(self.dataset) if args.logdir==None else args.logdir
-        self.iter=0 if args.iter==None else args.iter
+        self.iter=args.iter
 
         self.writer = SummaryWriter(log_dir=args.logdir)
         self.device = args.device
@@ -36,6 +36,7 @@ class MyGAN(object):
         self.isTest = args.isTest
         self.train_init = args.train_init
         self.epoch = args.epoch
+        self.cur_epoch=0
         self.pre_epoch = args.pre_epoch
         self.cpu_count = args.cpu_count
         # 定义模型参数
@@ -442,6 +443,7 @@ class MyGAN(object):
         params["style"] = self.style_net.state_dict()
         params["D"] = self.D.state_dict()
         params["D_patch"] = self.D_patch.state_dict()
+        params["iter"]=self.iter
         torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
                                         f'checkpoint_{self.dataset}.pth'))
         print("保存模型成功！")
@@ -454,8 +456,9 @@ class MyGAN(object):
         self.style_net.load_state_dict(params['style'])
         self.D.load_state_dict(params['D'])
         self.D_patch.load_state_dict(params['D_patch'])
+        if params.__contains__('iter'):
+            self.iter = int(params['iter'])
         print("加载模型成功！")
-
     def test(self):
         self.load_model()
         test_sample_num = 1
