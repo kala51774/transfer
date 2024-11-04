@@ -82,6 +82,8 @@ class MyGAN(object):
         self.sct.apply(init_weights)
         self.style_net.apply(init_weights)
         self.vgg19.load_state_dict(torch.load('vgg19.pth'))
+        self.vgg19 = torch.nn.Sequential(*list(self.vgg19.features.modules())[1:27])
+
         # 定义优化器
         if self.train_init:
             self.optim_G = optim.Adam(self.G.parameters(), lr=self.init_lr, betas=(self.b1, self.b2))

@@ -59,8 +59,13 @@ def get_parameter_number(model):
     return {'Total': total_num, 'Trainable': trainable_num}
 
 if __name__ == '__main__':
-
-   # print( get_parameter_number(VGG19()))
-   x =torch.randn(1, 3, 224, 224)
    vgg19= VGG19()
-   vgg19.forward(x)
+   vgg19.load_state_dict(torch.load('../vgg19.pth'))
+   x=torch.ones(1,3,224,224)
+   module_list = list(vgg19.features.modules())
+   new_layers = module_list[1:27]
+   new_model = torch.nn.Sequential(*new_layers)
+
+
+   print(new_model(x).shape)
+

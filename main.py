@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from patsy.test_state import test_Center
+# from patsy.test_state import test_Center
 
 from model.MyGAN import MyGAN
 from testdir.new_neck_v1 import new_neck_v1
