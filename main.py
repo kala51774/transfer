@@ -70,12 +70,14 @@ def main():
    # new_neck_v1()
    args=parse_args()
    args.isTrain=True
-   args.train_init=True
-   args.retrain=False
+   args.train_init=False
+   args.retrain=True
    args.neck = new_neck_v1
    args.batch_size = 1
    args.dataset="hayao"
    args.logdir="./logdir"
+
+   args.test_dir="results/hayao/checkpoint/checkpoint_hayao.pth"
    gan=MyGAN(args)
    if args.isTrain:
        if args.retrain:
