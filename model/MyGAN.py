@@ -16,6 +16,7 @@ from model.VGG19 import VGG19
 from utils.ImagePools import ImagePools
 from utils.content_struct import content_struct
 from utils.funs import *
+from tools.create_dir import create_directories
 
 
 class MyGAN(object):
@@ -470,6 +471,8 @@ class MyGAN(object):
             self.epoch = int(params['epoch'])
         print("加载模型成功！")
     def test(self):
+        create_directories(self.cur_epoch,'results/'+self.dataset)
+        # print(self.dataset)
         self.load_model()
         test_sample_num = 1
         self.G.eval(), self.style_net.eval(), self.sct.eval()
@@ -483,12 +486,23 @@ class MyGAN(object):
                 content_code = self.G.encoder(x)
                 share_code = self.sct(content_code, style_code)
                 fake_img = self.G.decoders(share_code)  # 生成假图
-                save_image(fake_img[0] * 0.5 + 0.5,
-                           os.path.join(self.result_dir, self.dataset, 'img', f'anime_lr{j}to{i}.png'))
+
+
+                save_image(fake_img * 0.5 + 0.5,
+                           os.path.join('results/'+self.dataset,f'epoch_{self.cur_epoch}','fake', f'anime_lr{j}to{i}.png'))
+                save_image(x * 0.5 + 0.5,
+                           os.path.join('results/'+self.dataset, f'epoch_{self.cur_epoch}' , 'real', f'anime_lr{j}to{i}.png'))
+                image = torch.cat((x * 0.5 + 0.5, fake_img * 0.5 + 0.5), axis=3)
+                save_image(image,
+                           os.path.join('results/'+self.dataset, f'epoch_{self.cur_epoch}', 'compare', f'anime_lr{j}to{i}.png'))
+                del image
         print("训练集测试图像生成成功！")
         # self.high_test()
 
+
     def high_test(self):
+        create_directories(self.cur_epoch,'results'+self.dataset)
+
         self.load_model()
         data_loader = self.load_data(epoch_test=True, high=True)
         self.G.eval(), self.style_net.eval(), self.sct.eval()
@@ -501,5 +515,17 @@ class MyGAN(object):
             share_code = self.sct(content_code, style_code)
             fake_img = self.G.decoders(share_code)
             image = torch.cat((x * 0.5 + 0.5, fake_img * 0.5 + 0.5), axis=3)
-            save_image(image, os.path.join(self.result_dir, self.dataset, 'img', f"test_high{i}.png"))
+            save_image(fake_img * 0.5 + 0.5,
+                       os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'fake',
+                                    f'anime_lr{j}to{i}.png'))
+            save_image(x * 0.5 + 0.5,
+                       os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'real',
+                                    f'anime_lr{j}to{i}.png'))
+            # image = torch.cat((x * 0.5 + 0.5, fake_img * 0.5 + 0.5), axis=3)
+            save_image(image,
+                       os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'compare',
+                                    f'anime_lr{j}to{i}.png'))
+            del image
+
+
             print("高分辨率测试集测试图像生成成功！")

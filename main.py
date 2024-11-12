@@ -69,7 +69,8 @@ def check_args(args):
 def main():
    # new_neck_v1()
    args=parse_args()
-   args.isTrain=True
+   # args.isTrain=True
+   args.isTest=True
    args.train_init=True
    args.retrain=True
    args.neck = new_neck_v2

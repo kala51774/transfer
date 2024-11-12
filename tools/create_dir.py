@@ -1,9 +1,9 @@
 import os
 
 
-def create_directories(epoch, current_dir='.'):
+def create_directories(epoch, current_dir):
     # 定义基本文件夹名称
-    base_folder = f'epoch{epoch}'
+    base_folder = f'epoch_{epoch}'
     base_path = os.path.join(current_dir, base_folder)
 
     # 定义子文件夹名称
@@ -38,5 +38,3 @@ def create_directories(epoch, current_dir='.'):
         print(f"Directory already exists: {compare_folder}")
 
 
-# 使用示例
-create_directories(2, current_dir='results/hayao')
