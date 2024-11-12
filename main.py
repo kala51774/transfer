@@ -1,13 +1,14 @@
 import argparse
 import os
 
-# from patsy.test_state import test_Center
-
 from model.MyGAN import MyGAN
 from testdir.new_neck_v1 import new_neck_v1
 
-from utils import *
+from testdir.new_neck_v2 import new_neck_v2
 from utils.funs import check_folder
+
+
+# from patsy.test_state import test_Center
 
 
 def parse_args():
@@ -63,16 +64,15 @@ def check_args(args):
     check_folder(os.path.join(args.result_dir, args.dataset, 'sty'))
     check_folder(os.path.join(args.result_dir, args.dataset, 'atten'))
     return args
-from Module.utm import utm
 
 
 def main():
    # new_neck_v1()
    args=parse_args()
    args.isTrain=True
-   args.train_init=False
+   args.train_init=True
    args.retrain=True
-   args.neck = new_neck_v1
+   args.neck = new_neck_v2
    args.batch_size = 1
    args.dataset="hayao"
    args.logdir="./logdir"

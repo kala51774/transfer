@@ -5,19 +5,17 @@ from torch import nn
 from utils.funs import calc_cov
 
 
-class new_neck_v1(nn.Module):
+class new_neck_v2(nn.Module):
     def __init__(self):
-        super(new_neck_v1, self).__init__()
+        super(new_neck_v2, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Conv2d(256,128,1,1,0),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128,32,1,1,0)
-        )
+        self.net = nn.Sequential(nn.Conv2d(256,128,1,1,0),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(128,32,1,1,0))
         self.uncompress = nn.Conv2d(32,256,1,1,0)
         self.sm = nn.Softmax(dim=-1)
         chanle = 256
-        self.bn_con =nn.BatchNorm2d(chanle)
+        # self.bn_con =nn.BatchNorm2d(chanle)
         self.bn_style =nn.BatchNorm2d(chanle)
 
     def calc_mean(self,feat):
@@ -34,7 +32,7 @@ class new_neck_v1(nn.Module):
 
             # cF_nor = nor_mean_std(content)
 
-            cF_nor = self.bn_con(content)
+            cF_nor = self.bn_style(content)
             cF = self.net(cF_nor)
             cF = self.uncompress(cF)
             cF = cF +content
@@ -47,8 +45,7 @@ class new_neck_v1(nn.Module):
 
             # sF_nor, smean = nor_mean(style)
             smean  = self.calc_mean(style)
-            cF_nor = self.bn_con(content)
-
+            cF_nor = self.bn_style(content)
             sF_nor = self.bn_style(style)
 
             cF = self.net(cF_nor)

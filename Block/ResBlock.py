@@ -1,5 +1,5 @@
 # 定义残差块
-from torch import  nn
+from torch import nn
 
 from model.ILN import ILN
 

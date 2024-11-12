@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torchvision.models import vgg19
 
 model_weight_urls = {
     "vgg11": "https://download.pytorch.org/models/vgg11-8a719046.pth",
@@ -65,7 +64,8 @@ if __name__ == '__main__':
    module_list = list(vgg19.features.modules())
    new_layers = module_list[1:27]
    new_model = torch.nn.Sequential(*new_layers)
-
+   print(f'模型大小{get_parameter_number(vgg19)}')
+   print(f'使用部分{get_parameter_number(new_model)}')
 
    print(new_model(x).shape)
 

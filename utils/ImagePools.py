@@ -1,14 +1,13 @@
 #### import os
+import glob as gl
 import os
-
-import torch
-import cv2
 import random
+
 from PIL import Image
 # import numpy as np
 from torchvision import transforms
-import glob as gl
-from torch.utils import data
+
+
 # import natsort
 
 

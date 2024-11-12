@@ -1,8 +1,9 @@
 import argparse
 import os
+
 import lpips
 import numpy as np
-import torch
+
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-d0', '--dir0', type=str, default="120.40")
 parser.add_argument('-d1', '--dir1', type=str, default="results/hayao/con")

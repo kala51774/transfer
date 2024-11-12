@@ -1,13 +1,12 @@
-from torch import nn
-import torch
-import time as t
-from tqdm import tqdm
 from torch import optim
+from tqdm import tqdm
+from torch.nn.functional import interpolate
+from torch.utils import data
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 # from torchvision.transforms import InterpolationMode
 from torchvision.utils import save_image
-from torch.utils import data
-from torch.nn.functional import interpolate
+from tqdm import tqdm
 
 from Discriminator.Discriminator_S import Discriminator_S
 from Encoder.StyleEncoder import StyleEncoder
@@ -16,8 +15,9 @@ from model.Generator import Generator
 from model.VGG19 import VGG19
 from utils.ImagePools import ImagePools
 from utils.content_struct import content_struct
-from  utils.funs import *
-from torch.utils.tensorboard import SummaryWriter
+from utils.funs import *
+
+
 class MyGAN(object):
     def __init__(self, args):
         super().__init__()
@@ -263,8 +263,8 @@ class MyGAN(object):
                     self.save_img1(epoch)
         else:
             print('==========================start train=====================================')
-            for epoch in tqdm(range(self.epoch)):
-
+            for epoch in tqdm(range(self.cur_epoch,self.epoch)):
+                self.cur_epoch = epoch
                 # 学习率衰退
                 if epoch > 99:
                     self.optim_G.param_groups[0]['lr'] -= 0.0002 / 50
@@ -447,7 +447,8 @@ class MyGAN(object):
         params["D"] = self.D.state_dict()
         params["D_patch"] = self.D_patch.state_dict()
         params["iter"]=self.iter
-        torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
+        params['epoch']=self.cur_epoch
+        torch.save(params, os.path.join(str(self.iter),self.result_dir, self.dataset, self.checkpoint_dir,
                                         f'checkpoint_{self.dataset}.pth'))
         print("保存模型成功！")
 
@@ -455,12 +456,18 @@ class MyGAN(object):
     def load_model(self):
         params = torch.load(self.test_dir)
         self.G.load_state_dict(params['G'])
-        self.sct.load_state_dict(params['sct'])
+        try:
+            self.sct.load_state_dict(params['sct'])
+        except Exception as e:
+            print(e)
+            print("sct加载失败，使用默认权重")
         self.style_net.load_state_dict(params['style'])
         self.D.load_state_dict(params['D'])
         self.D_patch.load_state_dict(params['D_patch'])
         if params.__contains__('iter'):
             self.iter = int(params['iter'])
+        if params.__contains__('epoch'):
+            self.epoch = int(params['epoch'])
         print("加载模型成功！")
     def test(self):
         self.load_model()

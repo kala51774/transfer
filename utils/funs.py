@@ -1,14 +1,15 @@
+import os
+import time as t
 from random import random
 
-import torch
-from torch import nn
-import numpy as np
 import cv2
-import os
-from torch.autograd import Variable
+import numpy as np
+import torch
 import torch.nn.functional as F
+from torch import nn
+from torch.autograd import Variable
 
-import  time as t
+
 # 参数权重初始化
 def init_weights(m, init_type='normal', gain=0.02):
     classname = m.__class__.__name__

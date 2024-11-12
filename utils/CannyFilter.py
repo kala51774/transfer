@@ -1,5 +1,4 @@
 #Canny 边缘检测
-from torch import nn
 
 from funs import *
 
