@@ -71,6 +71,7 @@ def check_args(args):
 def main():
    # new_neck_v1()
    args = parse_args()
+
    print(args.use_args)
 
    if args.use_args is False:
