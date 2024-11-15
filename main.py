@@ -31,9 +31,11 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='hayao')
     parser.add_argument('--data_dir',type=str,default='data')
     parser.add_argument('--test_dir',type=str,default='checkpoint_hayao80.pth')
+
     parser.add_argument('--isTrain',type=bool,default=False)
     parser.add_argument('--retrain', type=bool, default=True)
     parser.add_argument('--isTest', type=bool, default=True)
+
     parser.add_argument('--train_init', type=bool, default=False)
     parser.add_argument('--b1',type=int,default=0.5)
     parser.add_argument('--b2', type=int, default=0.999)
@@ -57,6 +59,11 @@ def parse_args():
     parser.add_argument('--iter', type=int, default=0)
     parser.add_argument('--logdir', type=str, default='./runs')
     parser.add_argument('--use_args', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+    parser.add_argument('--pretrain_arg', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+    parser.add_argument('--conpretrain_arg', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+    parser.add_argument('--contrain_arg', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+    parser.add_argument('--train_arg', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+
     check_args(parser.parse_args(args=[]))
     return parser.parse_args()
 def check_args(args):
@@ -74,6 +81,7 @@ def main():
 
    print(args.use_args)
 
+
    if args.use_args is False:
        args.isTrain=True
        # args.isTest=True
@@ -85,6 +93,26 @@ def main():
        args.logdir="./logdir"
        args.pre_epoch=50
        args.test_dir="results/hayao/checkpoint/56940_checkpoint_hayao.pth"
+   else:
+       args.neck = new_neck_v2
+       if     args.pretrain_arg==True:
+           args.isTrain=True
+           args.train_init = True
+           args.retrain=False
+       if     args.conpretrain_arg==True:
+           args.isTrain = True
+           args.train_init=True
+           args.retrain = True
+           args.test_dir = args.test_dir
+       if     args.contrain_arg==True:
+           args.isTrain = True
+           args.retrain = False
+           args.train_init = False
+           args.test_dir = args.test_dir
+       if     args.train_arg==True:
+           args.isTrain = True
+           args.retrain = True
+           args.train_init = False
 
    gan=MyGAN(args)
    if args.isTrain:
