@@ -39,8 +39,14 @@ class ImagePools(object):
         data = {}
         # print(self.list_A)
         # print(self.A_path, self.B_path)
-        A_path = self.list_A[index]
-        B_path = random.choice(self.list_B)
+
+        try:
+            print(self.list_A)
+            A_path = self.list_A[index]
+            B_path = random.choice(self.list_B)
+        except IndexError:
+            print(index)
+            # print(A_path, B_path)
         A = Image.open(A_path).convert('RGB')
         B = Image.open(B_path).convert('RGB')
         A = self.transform(A)
@@ -49,7 +55,7 @@ class ImagePools(object):
         return A, B
 
     def __len__(self):
-        return max(len(self.list_A), len(self.list_B))
+        return min(len(self.list_A), len(self.list_B))
 
 
 IMG_EXTENSIONS = [

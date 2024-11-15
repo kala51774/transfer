@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 from model.MyGAN import MyGAN
 from testdir.new_neck_v1 import new_neck_v1
@@ -55,8 +56,9 @@ def parse_args():
     parser.add_argument('--weight_decay', type=float, default=0.0001)
     parser.add_argument('--iter', type=int, default=0)
     parser.add_argument('--logdir', type=str, default='./runs')
-
-    return check_args(parser.parse_args(args=[]))
+    parser.add_argument('--use_args', help='如果指定这个参数，use_args 将被设置为 True', action='store_true')
+    check_args(parser.parse_args(args=[]))
+    return parser.parse_args()
 def check_args(args):
     check_folder(os.path.join(args.result_dir, args.dataset, 'checkpoint'))
     check_folder(os.path.join(args.result_dir, args.dataset, 'img'))
@@ -68,18 +70,21 @@ def check_args(args):
 
 def main():
    # new_neck_v1()
-   args=parse_args()
-   args.isTrain=True
-   # args.isTest=True
-   # args.train_init=True
-   args.retrain=True
-   args.neck = new_neck_v2
-   args.batch_size = 1
-   args.dataset="hayao"
-   args.logdir="./logdir"
-   args.pre_epoch=50
+   args = parse_args()
+   print(args.use_args)
 
-   args.test_dir="results/hayao/checkpoint/56940_checkpoint_hayao.pth"
+   if args.use_args is False:
+       args.isTrain=True
+       # args.isTest=True
+       # args.train_init=True
+       args.retrain=True
+       args.neck = new_neck_v2
+       args.batch_size = 1
+       args.dataset="hayao"
+       args.logdir="./logdir"
+       args.pre_epoch=50
+       args.test_dir="results/hayao/checkpoint/56940_checkpoint_hayao.pth"
+
    gan=MyGAN(args)
    if args.isTrain:
        if args.retrain:
