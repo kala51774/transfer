@@ -96,6 +96,7 @@ class MyGAN(object):
         self.optim_D_Patch = optim.Adam(self.D_patch.parameters(), lr=self.g_lr, betas=(self.b1, self.b2))
         # 定义损失
         self.l1_loss = nn.L1Loss()
+        self.kl_loss = nn.KLDivLoss()
         self.huber = nn.SmoothL1Loss()
         self.gan_loss = nn.MSELoss()
         self.tv_loss = VariationLoss(1)
@@ -144,7 +145,7 @@ class MyGAN(object):
                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
         if self.mode and self.isTrain:
             data_loader = data.DataLoader(ImagePools(root=self.data_dir, trans=test_trans, mode=self.mode),
-                                          batch_size=4,
+                                          batch_size=self.batch_size,
                                           pin_memory=True,
                                           drop_last=True
                                           , num_workers=0)
@@ -157,13 +158,13 @@ class MyGAN(object):
         if self.isTest and self.mode:
             if self.high:
                 data_loader = data.DataLoader(
-                    ImagePools(root=self.data_dir, trans=test_trans, mode=self.mode, high=self.high), batch_size=1,
+                    ImagePools(root=self.data_dir, trans=test_trans, mode=self.mode, high=self.high), batch_size=self.batch_size,
                     num_workers=2)
             else:
                 data_loader = data.DataLoader(ImagePools(root=self.data_dir, trans=test_trans, mode=self.mode),
                                               batch_size=1, num_workers=2)
         if self.isTest and not self.mode:
-            data_loader = data.DataLoader(ImagePools(root=self.data_dir, trans=test_trans), batch_size=1, num_workers=2)
+            data_loader = data.DataLoader(ImagePools(root=self.data_dir, trans=test_trans), batch_size=self.batch_size, num_workers=2)
         return data_loader
 
     # 加载灰度patch
@@ -174,9 +175,25 @@ class MyGAN(object):
         return real_gry, fake_gry
 
     # conten loss
+    # def content_loss(self, fake, real):
+    #     _, c, w, h = fake.shape
+    #     out_con = self.l1_loss(fake, real)
+    #     return out_con
+
     def content_loss(self, fake, real):
+        # 确保fake和real的形状相同
         _, c, w, h = fake.shape
-        out_con = self.l1_loss(fake, real)
+        # print(fake, real)
+
+        # 将fake转换为对数概率形式
+        log_fake = F.log_softmax(fake, dim=1)
+
+        # 将real转换为概率分布形式
+        real_prob = F.softmax(real, dim=1)
+
+        # 计算KL散度损失
+        out_con = self.kl_loss(log_fake, real_prob)
+        # print(out_con)
         return out_con
 
     # dis loss
@@ -213,7 +230,8 @@ class MyGAN(object):
         self.G.train()
         if self.train_init:
             print("=============================pre train phase==============================")
-            for epoch in tqdm(range(self.pre_epoch)):
+            for epoch in tqdm(range(self.cur_epoch,self.pre_epoch)):
+                self.cur_epoch = epoch
                 for i, (x, y) in enumerate(data_loader):
                     self.iter+=1
                     x, y = x.to(self.device), y.to(self.device)
@@ -230,6 +248,7 @@ class MyGAN(object):
                         real_con = self.vgg19(x)
                         fake_con1 = self.vgg19(fake1_img)
                     con_loss_1 = self.content_loss(fake_con1, real_con.detach())
+
                     # 128
                     real_con2 = interpolate(x, scale_factor=0.5, mode='bilinear')
                     real_con2 = interpolate(real_con2, scale_factor=2, mode='bilinear')
@@ -241,7 +260,9 @@ class MyGAN(object):
                     real_con3 = interpolate(real_con3, scale_factor=4, mode='bilinear')
                     fake_con3 = interpolate(fake1_img, scale_factor=0.25, mode='bilinear')
                     fake_con3 = interpolate(fake_con3, scale_factor=4, mode='bilinear')
+
                     con_loss_3 = self.content_loss(fake_con3, real_con3.detach())
+
                     con_loss = (con_loss_1 + con_loss_2 + con_loss_3) / 3 * self.weight_content
 
                     self.writer.add_scalar('con_loss1', con_loss_1, self.iter)
@@ -449,8 +470,8 @@ class MyGAN(object):
         params["D_patch"] = self.D_patch.state_dict()
         params["iter"]=self.iter
         params['epoch']=self.cur_epoch
-        torch.save(params, os.path.join(str(self.iter),self.result_dir, self.dataset, self.checkpoint_dir,
-                                        f'checkpoint_{self.dataset}.pth'))
+        torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
+                                        f'{self.iter}_checkpoint_{self.dataset}.pth'))
         print("保存模型成功！")
 
     # 加载模型

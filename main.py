@@ -69,16 +69,17 @@ def check_args(args):
 def main():
    # new_neck_v1()
    args=parse_args()
-   # args.isTrain=True
-   args.isTest=True
-   args.train_init=True
+   args.isTrain=True
+   # args.isTest=True
+   # args.train_init=True
    args.retrain=True
    args.neck = new_neck_v2
    args.batch_size = 1
    args.dataset="hayao"
    args.logdir="./logdir"
+   args.pre_epoch=50
 
-   args.test_dir="results/hayao/checkpoint/checkpoint_hayao.pth"
+   args.test_dir="results/hayao/checkpoint/56940_checkpoint_hayao.pth"
    gan=MyGAN(args)
    if args.isTrain:
        if args.retrain:
