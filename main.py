@@ -93,7 +93,7 @@ def main():
        args.pre_epoch=50
        args.test_dir="results/hayao/checkpoint/56940_checkpoint_hayao.pth"
    else:
-
+       args.neck = new_neck_v2
        if     args.pretrain_arg==True:
            args.isTrain=True
            args.train_init = True
