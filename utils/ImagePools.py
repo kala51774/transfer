@@ -41,7 +41,7 @@ class ImagePools(object):
         # print(self.A_path, self.B_path)
 
         try:
-            print(self.list_A)
+            # print(self.list_A)
             A_path = self.list_A[index]
             B_path = random.choice(self.list_B)
         except IndexError:
