@@ -472,6 +472,9 @@ class MyGAN(object):
         params['epoch']=self.cur_epoch
         torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
                                         f'{self.iter}_checkpoint_{self.dataset}.pth'))
+        torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
+                                        f'checkpoint_{self.dataset}.pth'))
+
         print("保存模型成功！")
 
     # 加载模型

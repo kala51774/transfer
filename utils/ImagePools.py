@@ -55,7 +55,7 @@ class ImagePools(object):
         return A, B
 
     def __len__(self):
-        return min(len(self.list_A), len(self.list_B))
+        return max(len(self.list_A), len(self.list_B))
 
 
 IMG_EXTENSIONS = [

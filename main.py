@@ -85,8 +85,8 @@ def main():
    if args.use_args is False:
        args.isTrain=True
        # args.isTest=True
-       # args.train_init=True
-       args.retrain=True
+       args.train_init=True
+       args.retrain=False
        args.neck = new_neck_v2
        args.batch_size = 1
        args.dataset="hayao"
