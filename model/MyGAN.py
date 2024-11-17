@@ -375,6 +375,7 @@ class MyGAN(object):
                     # color re LOSS
                     col_real_img = rgb_to_yuv(x, self._rgb_to_yuv_kernel)
                     col_fake_img = rgb_to_yuv(fake1_img, self._rgb_to_yuv_kernel)
+
                     col_loss = 10 * (
                             self.l1_loss(col_real_img[:, 0, :, :], col_fake_img[:, 0, :, :]) + self.huber(
                         col_real_img[:, 1, :, :], col_fake_img[:, 1, :, :]) + \
