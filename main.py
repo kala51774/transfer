@@ -88,7 +88,7 @@ def main():
        args.train_init=False
        args.retrain=True
        args.neck = new_neck_v2
-       args.batch_size = 2
+       args.batch_size = 1
        args.dataset="hayao"
        args.logdir="./logdir"
        args.pre_epoch=50
