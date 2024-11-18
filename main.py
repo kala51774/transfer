@@ -92,7 +92,7 @@ def main():
        args.dataset="hayao"
        args.logdir="./logdir"
        args.pre_epoch=50
-       args.test_dir="results/hayao/checkpoint/checkpoint_hayao.pth.pth"
+       args.test_dir="results/hayao/checkpoint/checkpoint_hayao.pth"
    else:
        args.neck = new_neck_v2
        if     args.pretrain_arg==True:
