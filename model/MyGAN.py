@@ -493,7 +493,7 @@ class MyGAN(object):
         if params.__contains__('iter'):
             self.iter = int(params['iter'])
         if params.__contains__('epoch'):
-            self.epoch = int(params['epoch'])
+            self.cur_epoch = int(params['epoch'])
         print("加载模型成功！")
     def test(self):
         create_directories(self.cur_epoch,'results/'+self.dataset)
