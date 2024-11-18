@@ -61,6 +61,8 @@ class MyGAN(object):
         self.weight_surface = args.weight_surface
         self.weight_testure = args.weight_testure
         self.weight_struct = args.weight_struct
+        self.kl_loss_weight = 10
+
 
         self.weight_style = args.weight_style
         self.weight_decay = args.weight_decay
@@ -175,30 +177,32 @@ class MyGAN(object):
         return real_gry, fake_gry
 
     # conten loss
-    # def content_loss(self, fake, real):
-    #     _, c, w, h = fake.shape
-    #     out_con = self.l1_loss(fake, real)
-    #     return out_con
-
     def content_loss(self, fake, real):
+        _, c, w, h = fake.shape
+        out_con = self.l1_loss(fake, real)
+        return out_con
+
+    def cal_kl_loss(self, fake, real):
         # 确保fake和real的形状相同
         _, c, w, h = fake.shape
         # print(fake, real)
 
         # 将fake转换为对数概率形式
         log_fake = F.log_softmax(fake, dim=1)
-
         # 将real转换为概率分布形式
         real_prob = F.softmax(real, dim=1)
-
         # 计算KL散度损失
         out_con = self.kl_loss(log_fake, real_prob)
         # print(out_con)
-        return out_con
+        return out_con*self.kl_loss_weight
 
     # dis loss
     def discriminator_loss(self, real, fake):
-        real_loss = torch.mean(torch.square(real - 1.0))
+        real_loss = torch.mean(torch.
+
+
+
+                               square(real - 1.0))
         fake_loss = torch.mean(torch.square(fake))
         loss = real_loss + fake_loss
         return loss
@@ -260,15 +264,18 @@ class MyGAN(object):
                     real_con3 = interpolate(real_con3, scale_factor=4, mode='bilinear')
                     fake_con3 = interpolate(fake1_img, scale_factor=0.25, mode='bilinear')
                     fake_con3 = interpolate(fake_con3, scale_factor=4, mode='bilinear')
-
-                    con_loss_3 = self.content_loss(fake_con3, real_con3.detach())
-
-                    con_loss = (con_loss_1 + con_loss_2 + con_loss_3) / 3 * self.weight_content
+                    r_tmp=real_con3.detach()
+                    con_loss_3 = self.content_loss(fake_con3, r_tmp)
+                    con_kl_loss = self.cal_kl_loss(fake_con3,r_tmp)
+                    con_loss = (con_loss_1 + con_loss_2 + con_loss_3+con_kl_loss) / 4 * self.weight_content
 
                     self.writer.add_scalar('con_loss1', con_loss_1, self.iter)
                     self.writer.add_scalar('con_loss2', con_loss_2, self.iter)
                     self.writer.add_scalar('con_loss3', con_loss_3, self.iter)
+                    self.writer.add_scalar('con_kl_loss', con_kl_loss, self.iter)
+
                     self.writer.add_scalar('con_loss', con_loss, self.iter)
+
                     self.iter += 1
 
                     con_loss.backward()
@@ -357,6 +364,8 @@ class MyGAN(object):
                         real_con = self.vgg19(x)
                         fake_con1 = self.vgg19(fake1_img)
                     con_loss_1 = self.content_loss(fake_con1, real_con.detach())
+                    kl_loss=self.cal_kl_loss(fake_con1,real_con)
+
                     # 128
                     real_con2 = interpolate(x, scale_factor=0.5, mode='bilinear')
                     real_con2 = interpolate(real_con2, scale_factor=2, mode='bilinear')
@@ -381,7 +390,7 @@ class MyGAN(object):
                         col_real_img[:, 1, :, :], col_fake_img[:, 1, :, :]) + \
                             self.huber(col_real_img[:, 2, :, :], col_fake_img[:, 2, :, :]))
 
-                    g_loss = (g_surface_loss + g_testure_loss + con_loss + tv_loss + col_loss) / 5
+                    g_loss = (g_surface_loss + g_testure_loss + con_loss + tv_loss + col_loss+kl_loss) / 6
                     #                     else:
                     g_loss.backward()
                     self.optim_G.step()

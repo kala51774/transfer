@@ -86,13 +86,13 @@ def main():
        args.isTrain=True
        # args.isTest=True
        args.train_init=True
-       args.retrain=False
+       args.retrain=True
        args.neck = new_neck_v2
        args.batch_size = 1
        args.dataset="hayao"
        args.logdir="./logdir"
-       args.pre_epoch=50
-       args.test_dir="results/hayao/checkpoint/66560checkpoint_hayao.pth"
+       args.pre_epoch=20
+       args.test_dir="results/hayao/checkpoint/checkpoint_hayao.pth"
    else:
        args.neck = new_neck_v2
        if     args.pretrain_arg==True:
