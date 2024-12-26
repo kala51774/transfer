@@ -10,7 +10,7 @@ parser.add_argument('-d1', '--dir1', type=str, default="results/hayao/con")
 parser.add_argument('-o', '--out', type=str, default='example_dists.txt')
 parser.add_argument('-v', '--version', type=str, default='0.1')
 parser.add_argument('--use_gpu', type=bool,default=True, help='turn on flag to use GPU')
-
+ 
 opt = parser.parse_args()
 # folder1 = "results\Mystyle\img"   # 第一个文件夹的实际路径
 # folder2 = "results\Mystyle\sty"
