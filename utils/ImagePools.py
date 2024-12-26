@@ -23,9 +23,9 @@ class ImagePools(object):
 
             self.A_path = os.path.join(root, "train_photo/*")
             self.B_path = os.path.join(root, "hayao/*")
-        elif self.high:
-            self.A_path = os.path.join(root, "testA/*")
-            self.B_path = os.path.join(root, "testB/*")
+        elif self.mode:
+            self.A_path = os.path.join(root, "test_photo256/*")
+            self.B_path = os.path.join(root, "hayao/*")
         else:
             self.A_path = os.path.join(root, "train_photo/*")
             self.B_path = os.path.join(root, "hayao/*")

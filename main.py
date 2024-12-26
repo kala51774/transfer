@@ -5,7 +5,7 @@ import sys
 from model.MyGAN import MyGAN
 from testdir.new_neck_v1 import new_neck_v1
 
-from testdir.new_neck_v2 import new_neck_v2
+from testdir.utm import utm 
 from utils.funs import check_folder
 
 
@@ -83,11 +83,11 @@ def main():
 
 
    if args.use_args is False:
-       args.isTrain=True
-       # args.isTest=True
-       args.train_init=True
+    #    args.isTrain=True
+       args.isTest=True
+       args.train_init=False
        args.retrain=True
-       args.neck = new_neck_v2
+       args.neck = utm
        args.batch_size = 1
        args.dataset="hayao"
        args.logdir="./logdir"
@@ -122,7 +122,7 @@ def main():
        gan.train()
        print("train haved finished")
    if args.isTest:
-       gan.test()
+       gan.high_test()
        print("test haved finished")
 if __name__=="__main__":
     main()

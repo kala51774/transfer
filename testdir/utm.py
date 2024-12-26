@@ -2,39 +2,25 @@
 import torch
 from torch import nn
 
-from utils.funs import calc_cov
+from utils.funs import nor_mean_std, nor_mean, calc_cov
 
 
-class new_neck_v1(nn.Module):
+class utm(nn.Module):
     def __init__(self):
-        super(new_neck_v1, self).__init__()
+        super(utm, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Conv2d(256,128,1,1,0),
-            nn.Conv2d(128,32,1,1,0),
-            nn.ReLU(inplace=True)
-        )
+        self.net = nn.Sequential(nn.Conv2d(256,128,1,1,0),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(128,32,1,1,0))
         self.uncompress = nn.Conv2d(32,256,1,1,0)
         self.sm = nn.Softmax(dim=-1)
-        chanle = 256
-        # self.bn_con =nn.BatchNorm2d(chanle)
-        self.bn_style =nn.BatchNorm2d(chanle)
-
-    def calc_mean(self,feat):
-        size = feat.size()
-        assert (len(size) == 4)
-        N, C = size[:2]
-        feat_mean = feat.view(N, C, -1).mean(dim=2).view(N, C, 1, 1)
-        return feat_mean
 
     def forward(self, content, style=None,noise=None,init=False):
 
         if init:
             # print("content.shape:", content.shape)
 
-            # cF_nor = nor_mean_std(content)
-
-            cF_nor = self.bn_con(content)
+            cF_nor = nor_mean_std(content)
             cF = self.net(cF_nor)
             cF = self.uncompress(cF)
             cF = cF +content
@@ -43,14 +29,9 @@ class new_neck_v1(nn.Module):
 
         else:
             # print("content.shape:", content.shape,"style.shape:",style.shape)
-            # cF_nor = nor_mean_std(content)
 
-            # sF_nor, smean = nor_mean(style)
-            smean  = self.calc_mean(style)
-            cF_nor = self.bn_style(content)
-
-            sF_nor = self.bn_style(style)
-
+            cF_nor = nor_mean_std(content)
+            sF_nor, smean = nor_mean(style)
             cF = self.net(cF_nor)
             sF = self.net(sF_nor)
             b, c, w, h = cF.size()
@@ -72,6 +53,6 @@ def count_parameters(model):
 if __name__ == '__main__':
     x = torch.randn(3,256,64,64)
     # print(x.shape)
-    model= new_neck_v1()
-    print(model(x,x).shape)
+    model= utm()
+    # print(model(x,x).shape)
     print(count_parameters(model))

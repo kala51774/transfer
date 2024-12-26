@@ -1,6 +1,6 @@
 # 定义生成器
 from torch import nn
-
+import torch
 from Decoder.GenDecoder import GenDecoder
 from model.GenEncoder import GenEncoder
 
@@ -14,13 +14,14 @@ class Generator(nn.Module):
         # 解码器
         self.Decoder = [GenDecoder(n_block=D_block)]
         self.Decoder = nn.Sequential(*self.Decoder)
+    # @torch.amp.autocast('cuda')
 
     def encoder(self, x):
         return self.Encoder(x)  # type: ignore
+    # @torch.amp.autocast('cuda')
 
     def decoders(self, x):
         return self.Decoder(x)
-
     def forward(self, x):
         encode = self.encoder(x)
         return self.decoders(encode)

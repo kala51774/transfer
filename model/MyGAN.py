@@ -7,7 +7,7 @@ from torchvision import transforms
 # from torchvision.transforms import InterpolationMode
 from torchvision.utils import save_image
 from tqdm import tqdm
-
+from WTConv.wtconv import WTConv2d
 from Discriminator.Discriminator_S import Discriminator_S
 from Encoder.StyleEncoder import StyleEncoder
 from model.Discriminator_T import Discriminator_T
@@ -25,7 +25,7 @@ class MyGAN(object):
         # 定义配置
         self.logdir = './runs'.join(self.dataset) if args.logdir==None else args.logdir
         self.iter=args.iter
-
+        
         self.writer = SummaryWriter(log_dir=args.logdir)
         self.device = args.device
         self.result_dir = args.result_dir
@@ -56,13 +56,12 @@ class MyGAN(object):
         self.init_lr = args.init_lr
         self.batch_size = args.batch_size
         self.save_pred = args.save_pred
+        self.acc_weight = 1
         # 模型权重参数w
         self.weight_content = args.weight_content
         self.weight_surface = args.weight_surface
         self.weight_testure = args.weight_testure
         self.weight_struct = args.weight_struct
-        self.kl_loss_weight = 10
-
 
         self.weight_style = args.weight_style
         self.weight_decay = args.weight_decay
@@ -72,6 +71,7 @@ class MyGAN(object):
         self.D = Discriminator_S().to(self.device)
         self.D_patch = Discriminator_T().to(self.device)
         self.style_net = StyleEncoder().to(self.device)
+        # self.WTconv=WTConv2d(3, 3, kernel_size=1, wt_levels=3).to('cuda')
         # self.sct = utm().to(self.device)
         self.sct = args.neck().to(self.device)
 
@@ -130,6 +130,7 @@ class MyGAN(object):
               self.weight_testure, self.weight_struct, self.tv_weight)
         print("# init_lr,g_lr,d_lr: ", self.init_lr, self.g_lr, self.d_lr)
 
+        
     # 生成假图.to(self.device)
 
     # 读取数据集
@@ -142,9 +143,19 @@ class MyGAN(object):
                        transforms.RandomHorizontalFlip(0.5),
                        transforms.ToTensor(),
                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        
         test_trans = [transforms.Resize([512, 512]),
                       transforms.ToTensor(),
                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        if self.high==True:
+            self.batch_size=1
+        return data.DataLoader(ImagePools(root=self.data_dir, trans=train_trans, mode=self.mode),
+                                          batch_size=self.batch_size,
+                                          pin_memory=True,
+                                          drop_last=True
+                                          , num_workers=0)
+
+
         if self.mode and self.isTrain:
             data_loader = data.DataLoader(ImagePools(root=self.data_dir, trans=test_trans, mode=self.mode),
                                           batch_size=self.batch_size,
@@ -182,27 +193,10 @@ class MyGAN(object):
         out_con = self.l1_loss(fake, real)
         return out_con
 
-    def cal_kl_loss(self, fake, real):
-        # 确保fake和real的形状相同
-        _, c, w, h = fake.shape
-        # print(fake, real)
-
-        # 将fake转换为对数概率形式
-        log_fake = F.log_softmax(fake, dim=1)
-        # 将real转换为概率分布形式
-        real_prob = F.softmax(real, dim=1)
-        # 计算KL散度损失
-        out_con = self.kl_loss(log_fake, real_prob)
-        # print(out_con)
-        return out_con*self.kl_loss_weight
-
+   
     # dis loss
     def discriminator_loss(self, real, fake):
-        real_loss = torch.mean(torch.
-
-
-
-                               square(real - 1.0))
+        real_loss = torch.mean(torch.square(real - 1.0))
         fake_loss = torch.mean(torch.square(fake))
         loss = real_loss + fake_loss
         return loss
@@ -227,7 +221,11 @@ class MyGAN(object):
 
     # 训练
     def train(self):
+        # self.batch_size =1
+        # input()
         data_loader = self.load_data()
+        
+  
         count = len(data_loader)
 
         start_t = t.time()
@@ -236,6 +234,8 @@ class MyGAN(object):
             print("=============================pre train phase==============================")
             for epoch in tqdm(range(self.cur_epoch,self.pre_epoch)):
                 self.cur_epoch = epoch
+                self.save_img(self.cur_epoch)
+                torch.cuda.empty_cache()
                 for i, (x, y) in enumerate(data_loader):
                     self.iter+=1
                     x, y = x.to(self.device), y.to(self.device)
@@ -264,18 +264,15 @@ class MyGAN(object):
                     real_con3 = interpolate(real_con3, scale_factor=4, mode='bilinear')
                     fake_con3 = interpolate(fake1_img, scale_factor=0.25, mode='bilinear')
                     fake_con3 = interpolate(fake_con3, scale_factor=4, mode='bilinear')
-                    r_tmp=real_con3.detach()
-                    con_loss_3 = self.content_loss(fake_con3, r_tmp)
-                    con_kl_loss = self.cal_kl_loss(fake_con3,r_tmp)
-                    con_loss = (con_loss_1 + con_loss_2 + con_loss_3+con_kl_loss) / 4 * self.weight_content
+
+                    con_loss_3 = self.content_loss(fake_con3, real_con3.detach())
+
+                    con_loss = (con_loss_1 + con_loss_2 + con_loss_3) / 3 * self.weight_content
 
                     self.writer.add_scalar('con_loss1', con_loss_1, self.iter)
                     self.writer.add_scalar('con_loss2', con_loss_2, self.iter)
                     self.writer.add_scalar('con_loss3', con_loss_3, self.iter)
-                    self.writer.add_scalar('con_kl_loss', con_kl_loss, self.iter)
-
                     self.writer.add_scalar('con_loss', con_loss, self.iter)
-
                     self.iter += 1
 
                     con_loss.backward()
@@ -290,8 +287,12 @@ class MyGAN(object):
                         f"time:{time_change(end_epoch_t - start_t)}")
                 if epoch % self.save_pred == 0:
                     self.save_img1(epoch)
+                if i %100==0:
+                    self.save_img1(epoch)
         else:
             print('==========================start train=====================================')
+            
+
             for epoch in tqdm(range(self.cur_epoch,self.epoch)):
                 self.cur_epoch = epoch
                 # 学习率衰退
@@ -302,6 +303,8 @@ class MyGAN(object):
                     self.optim_sct.param_groups[0]['lr'] -= 0.0002 / 50
                     self.op_style_net.param_groups[0]['lr'] -= 0.0002 / 50
                 for i, (x, y) in enumerate(data_loader):
+                    # print(x.shape)
+
                     x, y = x.to(self.device), y.to(self.device)
                     self.D.train(), self.D_patch.train()
                     # zero grident
@@ -314,15 +317,27 @@ class MyGAN(object):
                     content_code = self.G.encoder(x)
                     share_code = self.sct(content_code, style_code)
                     fake_img = self.G.decoders(share_code)
+
+                    
+
                     # 减少模型震荡
                     # surface
                     gf_real_img_h = interpolate(y, scale_factor=2, mode='bilinear')
                     gf_fake_img_h = interpolate(fake_img, scale_factor=2, mode='bilinear')
+                
                     gf_real_img_h = self.gf.guided_filter(gf_real_img_h, gf_real_img_h, r=5, eps=2e-1)
                     gf_fake_img_h = self.gf.guided_filter(gf_fake_img_h, gf_fake_img_h, r=5, eps=2e-1)
 
+
+                    # print(gf_fake_img_h.shape)
+                    
+                  
+
+                    # print(gf_real_img_h.shape,gf_fake_img_h.shape)
                     d_real_logit = self.D(gf_real_img_h)
                     d_fake_logit = self.D(gf_fake_img_h.detach())
+                    # print(d_real_logit.shape,d_fake_logit.shape)
+                    # print(d_real_logit,d_fake_logit)
                     d_surface_loss = self.discriminator_loss(d_real_logit, d_fake_logit)
                     # testure
                     anime_gry_patch, fake_gry_patch = self.load_patch(gf_real_img_h, gf_fake_img_h)
@@ -331,27 +346,53 @@ class MyGAN(object):
                     real_patch_logit = self.D_patch(anime_gry_patch)
                     fake_patch_logit = self.D_patch(fake_gry_patch.detach())
                     d_testure_loss = self.discriminator_gram_loss(real_patch_logit, fake_patch_logit)
+            
                     d_loss = (d_surface_loss + d_testure_loss) / 2
+                
                     d_loss.backward()
                     self.optim_D.step()
                     self.optim_D_Patch.step()
+                    # #更新网络
+                    # if (i+1)%self.acc_weight==0:
+                    #     self.optim_D.step()
+                    #     self.optim_D_Patch.step()
+                    #     self.optim_D.zero_grad()
+                    #     self.optim_D_Patch.zero_grad()
+                    #     self.op_style_net.zero_grad()
+                    #     self.optim_sct.zero_grad()
+                 
+                 
+
                     # G
                     self.style_net.train()
                     self.sct.train()
                     self.optim_G.zero_grad()
                     self.op_style_net.zero_grad()
                     self.optim_sct.zero_grad()
+
+
+
+
+
+
                     # style  loss
                     style_code = self.style_net(y)
                     content_code = self.G.encoder(x)
                     share_code = self.sct(content_code, style_code)
                     fake1_img = self.G.decoders(share_code)
+                    
                     # surface
                     gf_fake_img_h1 = interpolate(fake1_img, scale_factor=2, mode='bilinear')
                     #                     y =interpolate(y,scale_factor=2,mode='bilinear')
                     gf_fake_img_h1 = self.gf.guided_filter(gf_fake_img_h1, gf_fake_img_h1, r=5, eps=2e-1)
 
                     g_fake_logit1 = self.D(gf_fake_img_h1)
+
+                    print("D_LOSS")
+                    print("g_fake_logit1",g_fake_logit1.shape,g_fake_logit1.shape)
+
+
+
                     g_surface_loss = self.generator_loss(g_fake_logit1) * self.weight_surface
                     # testure
                     _, fake_gry_patch1 = self.load_patch(gf_fake_img_h1, gf_fake_img_h1)
@@ -360,12 +401,21 @@ class MyGAN(object):
 
                     g_testure_loss = self.generator_gram_loss(fake_patch_logit) * self.weight_testure
                     # multi-level content loss
-                    with torch.no_grad():
-                        real_con = self.vgg19(x)
-                        fake_con1 = self.vgg19(fake1_img)
-                    con_loss_1 = self.content_loss(fake_con1, real_con.detach())
-                    kl_loss=self.cal_kl_loss(fake_con1,real_con)
+                    if (i+1)%100==0:
+                        output_name = '{:s}/{:s}{:s}'.format("results/hayao/img", str(i+1), ".jpg")
+                        x1=x.to('cpu')
+                        y1=y.to('cpu')
+                        out=fake1_img.to('cpu')
+                        out = torch.cat((x1, out), 0)
+                        out = torch.cat((y1, out), 0)
+                        out = out.to(torch.device('cpu'))
+                        save_image(out * 0.5 + 0.5, output_name)
+                         
 
+                    # with torch.no_grad():
+                    real_con = self.vgg19(x)
+                    fake_con1 = self.vgg19(fake1_img)
+                    con_loss_1 = self.content_loss(fake_con1, real_con.detach())
                     # 128
                     real_con2 = interpolate(x, scale_factor=0.5, mode='bilinear')
                     real_con2 = interpolate(real_con2, scale_factor=2, mode='bilinear')
@@ -384,18 +434,34 @@ class MyGAN(object):
                     # color re LOSS
                     col_real_img = rgb_to_yuv(x, self._rgb_to_yuv_kernel)
                     col_fake_img = rgb_to_yuv(fake1_img, self._rgb_to_yuv_kernel)
-
                     col_loss = 10 * (
                             self.l1_loss(col_real_img[:, 0, :, :], col_fake_img[:, 0, :, :]) + self.huber(
                         col_real_img[:, 1, :, :], col_fake_img[:, 1, :, :]) + \
                             self.huber(col_real_img[:, 2, :, :], col_fake_img[:, 2, :, :]))
 
-                    g_loss = (g_surface_loss + g_testure_loss + con_loss + tv_loss + col_loss+kl_loss) / 6
-                    #                     else:
+                    g_loss = (g_surface_loss + g_testure_loss + con_loss + tv_loss + col_loss) / 5
+                  
                     g_loss.backward()
+                    
                     self.optim_G.step()
                     self.op_style_net.step()
                     self.optim_sct.step()
+                    # if (i+1)%self.acc_weight==0:
+                    #     self.optim_G.step()
+                    #     self.op_style_net.step()
+                    #     self.optim_sct.step()
+                    #     self.optim_G.zero_grad()
+                    #     self.op_style_net.zero_grad()
+                    #     self.optim_sct.zero_grad()
+
+
+
+                    # g_loss.backward()
+
+                    # self.optim_G.step()
+                    # self.op_style_net.step()
+                    # self.optim_sct.step()
+                    
                     end_epoch_t = t.time()
                     self.writer.add_scalar('tv_loss1', tv_loss, self.iter)
                     self.writer.add_scalar('g_surface_loss', g_surface_loss, self.iter)
@@ -413,7 +479,6 @@ class MyGAN(object):
                 if (epoch + 1) % self.save_pred == 0:
                     with torch.no_grad():
                         self.save_model()
-
     #                          self.save_img(epoch)
     def save_img1(self, epoch):
         test_sample_num = 5
@@ -430,7 +495,7 @@ class MyGAN(object):
             image = torch.cat((x * 0.5 + 0.5, fake_img1 * 0.5 + 0.5), axis=3)
             save_image(image, os.path.join(self.result_dir, self.dataset, 'img', f"train_{j}{epoch}.png"))
         print("训练集测试图像生成成功！")
-        self.save_model()
+        # self.save_model()
         self.G.train(), self.style_net.train(), self.sct.train()
 
     def save_img(self, epoch):
@@ -484,7 +549,6 @@ class MyGAN(object):
                                         f'{self.iter}_checkpoint_{self.dataset}.pth'))
         torch.save(params, os.path.join(self.result_dir, self.dataset, self.checkpoint_dir,
                                         f'checkpoint_{self.dataset}.pth'))
-
         print("保存模型成功！")
 
     # 加载模型
@@ -492,6 +556,7 @@ class MyGAN(object):
         params = torch.load(self.test_dir)
         self.G.load_state_dict(params['G'])
         try:
+
             self.sct.load_state_dict(params['sct'])
         except Exception as e:
             print(e)
@@ -502,7 +567,7 @@ class MyGAN(object):
         if params.__contains__('iter'):
             self.iter = int(params['iter'])
         if params.__contains__('epoch'):
-            self.epoch = int(params['epoch'])
+            self.cur_epoch = int(params['epoch'])
         print("加载模型成功！")
     def test(self):
         create_directories(self.cur_epoch,'results/'+self.dataset)
@@ -535,9 +600,10 @@ class MyGAN(object):
 
 
     def high_test(self):
-        create_directories(self.cur_epoch,'results'+self.dataset)
-
         self.load_model()
+
+        create_directories(self.cur_epoch,'results/'+self.dataset)
+
         data_loader = self.load_data(epoch_test=True, high=True)
         self.G.eval(), self.style_net.eval(), self.sct.eval()
         for i, (x, y) in tqdm(enumerate(data_loader)):
@@ -551,14 +617,14 @@ class MyGAN(object):
             image = torch.cat((x * 0.5 + 0.5, fake_img * 0.5 + 0.5), axis=3)
             save_image(fake_img * 0.5 + 0.5,
                        os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'fake',
-                                    f'anime_lr{j}to{i}.png'))
+                                    f'anime_lrto{i}.png'))
             save_image(x * 0.5 + 0.5,
                        os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'real',
-                                    f'anime_lr{j}to{i}.png'))
+                                    f'anime_lrto{i}.png'))
             # image = torch.cat((x * 0.5 + 0.5, fake_img * 0.5 + 0.5), axis=3)
             save_image(image,
                        os.path.join('results/' + self.dataset, f'epoch_{self.cur_epoch}', 'compare',
-                                    f'anime_lr{j}to{i}.png'))
+                                    f'anime_lrto{i}.png'))
             del image
 
 
