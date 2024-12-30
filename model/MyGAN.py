@@ -401,7 +401,7 @@ class MyGAN(object):
 
                     print(
                         f"epoch:[{epoch + 1}/{self.epoch}],iter:[{i + 1}/{count}],loss_G:{g_loss},loss_d:{d_loss},G_lr:{self.optim_G.param_groups[0]['lr']},D_lr:{self.optim_D.param_groups[0]['lr']},time:{time_change(end_epoch_t - start_t)}")
-                if (epoch + 1) % self.save_pred == 0:
+                if (epoch ) % self.save_pred == 0:
                     with torch.no_grad():
                         self.save_model()
 
